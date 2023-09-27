@@ -15,19 +15,20 @@ struct ContentView : View {
     
     @State private var _cities: [GeoCoding] = []
     
+    @State private var _selectedCity: GeoCoding? = nil
+    
     var body: some View {
         NavigationStack {
             List {
                 ForEach(_cities, id: \.self) { city in
-                    NavigationLink {
+                    NavigationLink(tag: city, selection: $_selectedCity) {
                         DetailView(city: city)
-                        
                     } label: {
                         Text("\(city.name!) , \(city.state! )")
                     }
                 }
             }
-            .navigationTitle("Contacts")
+            .navigationTitle("Search")
         }
         .searchable(text: $searchText) {
             ForEach(_cities, id: \.self) { city in
@@ -42,6 +43,7 @@ struct ContentView : View {
             }
         }
         .onAppear(){
+            restoreLast()
             if !searchText.isEmpty {
                 runSearch(matching: searchText )
             }
@@ -55,8 +57,19 @@ struct ContentView : View {
             case .success(let cities):
                 _cities = cities
             case .failure(let e):
+                // TODO: need to add error behavior
                 _cities.removeAll()
             }
+        }
+    }
+    
+    private let defaults = UserDefaults.standard
+
+    
+    private func restoreLast() {
+        if let cityJson = defaults.string(forKey: "city"), let city = try? JSONDecoder().decode(GeoCoding.self, from: Data(cityJson.utf8)) {
+            _cities.removeAll()
+            _cities.append(city)
         }
     }
 }
@@ -106,6 +119,7 @@ struct DetailView: View {
             .navigationTitle("\(city.name!), \(city.state!)")
         }
         .onAppear{
+            saveLastCity(city)
             requestWeather()
         }
     }
@@ -119,6 +133,13 @@ struct DetailView: View {
                 print(e.localizedDescription)
             }
             
+        }
+    }
+    
+    private let defaults = UserDefaults.standard
+    private func saveLastCity(_ city: GeoCoding){
+        if let encodedCity = try? JSONEncoder().encode(city){
+            defaults.set( String(data: encodedCity, encoding: .utf8) , forKey: "city")
         }
     }
     
