@@ -12,6 +12,7 @@ import retrofit2.http.Query
 //https://api.openweathermap.org/data/2.5/weather?q={city name},{state code},{country code}&appid={API key}
 //https://api.openweathermap.org/geo/1.0/direct?q=London&limit=5&appid={API key}
 //https://api.openweathermap.org/data/2.5/weather?lat=33.44&lon=-9ee4.04&appid={API key}
+//http://api.openweathermap.org/geo/1.0/reverse?lat={lat}&lon={lon}&limit={limit}&appid={API key}
 
 interface WeatherAPI {
 
@@ -20,4 +21,7 @@ interface WeatherAPI {
 
     @GET(Constants.PATH_GEO)
     suspend fun getGeoDataFor(@Query("q") q: String, @Query("limit") limit: Int = 5, @Query("appid") appid: String = Constants.API_KEY): GeoResponse
+
+    @GET(Constants.PATH_GEO_REVERSED)
+    suspend fun getReversed(@Query("lat") lat: Double, @Query("lon") lon: Double, @Query("limit") limit: Int = 1, @Query("appid") appid: String = Constants.API_KEY): GeoResponse
 }

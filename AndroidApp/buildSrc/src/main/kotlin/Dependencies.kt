@@ -28,6 +28,7 @@ object Dependencies {
     const val composeDebugUiTest = "androidx.compose.ui:ui-test-manifest"
 
     const val composeBOM = "androidx.compose:compose-bom:${Versions.composeBOM}"
+    const val permissionRequest = "com.google.accompanist:accompanist-permissions:${Versions.accompanist}"
 
     const val testJUnit = "junit:junit:${Versions.testJUnit}"
     const val testJUnitJupiter = "org.junit.jupiter:junit-jupiter:${Versions.testJUnitJupiter}"
@@ -55,6 +56,8 @@ fun DependencyHandler.compose() {
     implementation(Dependencies.composeMaterial3)
     implementation(Dependencies.composeLiveData)
     implementation(Dependencies.composeMaterial)
+
+    implementation(Dependencies.permissionRequest)
 }
 
 fun DependencyHandler.composeDebug() {

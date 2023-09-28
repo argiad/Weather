@@ -7,6 +7,7 @@ object Constants {
 
     const val PATH_WEATHER = "/data/2.5/weather"
     const val PATH_GEO = "/geo/1.0/direct"
+    const val PATH_GEO_REVERSED = "/geo/1.0/reverse"
 
 
 }

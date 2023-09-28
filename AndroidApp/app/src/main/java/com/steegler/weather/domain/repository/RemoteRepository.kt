@@ -16,5 +16,8 @@ class RemoteRepository constructor(
         return Resource.Success(api.getGeoDataFor("$cityName,US"))
     }
 
+    override suspend fun getGeoFor(latitude: Double, longitude: Double): Resource<GeoResponse> {
+        return Resource.Success(api.getReversed(lat = latitude, lon = longitude))
+    }
 
 }

@@ -2,8 +2,10 @@ package com.steegler.weather.di
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.location.LocationManager
 import android.preference.PreferenceManager
 import com.steegler.weather.Constants
+import com.steegler.weather.LocationHelper
 import com.steegler.weather.domain.repository.RemoteRepository
 import com.steegler.weather.domain.repository.WeatherRepository
 import com.steegler.weather.network.WeatherAPI
@@ -44,7 +46,15 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun providePreferences(@ApplicationContext context: Context) : SharedPreferences{
+    fun providePreferences(@ApplicationContext context: Context): SharedPreferences {
         return PreferenceManager.getDefaultSharedPreferences(context)
     }
+
+    @Provides
+    @Singleton
+    fun provideLocationManager(@ApplicationContext context: Context): LocationHelper {
+        val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return LocationHelper(lm)
+    }
+
 }

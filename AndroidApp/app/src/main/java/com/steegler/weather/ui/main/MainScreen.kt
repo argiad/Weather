@@ -1,7 +1,8 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 
 package com.steegler.weather.ui.main
 
+import android.Manifest
 import android.content.SharedPreferences
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,6 +23,7 @@ import androidx.compose.material.Divider
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -38,7 +40,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
@@ -49,14 +50,17 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.gson.Gson
+import com.steegler.weather.LocationHelper
 import com.steegler.weather.Resource
 import com.steegler.weather.data.remote.GeoResponseItem
 import com.steegler.weather.data.remote.Main
 import com.steegler.weather.data.remote.WeatherResponse
 import com.steegler.weather.domain.usecase.GetGeo
+import com.steegler.weather.domain.usecase.GetGeoReverse
 import com.steegler.weather.domain.usecase.GetWeather
-import com.steegler.weather.domain.usecase.GetWeatherFor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -80,14 +84,24 @@ fun MainScreen(
     val weather by viewModel.weather.collectAsState()
     val isWeatherLoading by viewModel.isWeatherLoading.collectAsState()
     val lastSelectedCity by viewModel.lastSelectedCity.collectAsState()
+    val locationCity by viewModel.locationCity.collectAsState()
 
-    var isFocused = remember { mutableStateOf(true) }
+    val permissionState = rememberMultiplePermissionsState(listOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION))
+    val isFocused = remember { mutableStateOf(true) }
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     val interactionSource = remember { MutableInteractionSource() }
     LaunchedEffect(Unit) {
         viewModel.restoreFromPref()
+    }
+
+    LaunchedEffect(!permissionState.allPermissionsGranted) {
+        permissionState.launchMultiplePermissionRequest()
+    }
+
+    LaunchedEffect(permissionState.allPermissionsGranted) {
+        viewModel.defineLocation()
     }
 
     Box(modifier = Modifier
@@ -100,19 +114,36 @@ fun MainScreen(
             focusManager.clearFocus(true)
         }) {// London
 
-        if (weather != null)
-            Row {
-                LazyColumn(
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .padding(top = TextFieldDefaults.MinHeight + 24.dp)
-                ) {
+        Column {
+
+            LazyColumn(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .padding(top = TextFieldDefaults.MinHeight + 24.dp)
+            ) {
+                if (!permissionState.allPermissionsGranted)
+                    item {
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(top = 6.dp, start = 8.dp, end = 8.dp)
+                                .height(34.dp)
+                        ) {
+
+                            Button(onClick = {
+                                println("**************************")
+                                permissionState.launchMultiplePermissionRequest()
+                            }) {
+                                Text(text = "Request permissions")
+                            }
+                        }
+                    }
+                if (weather != null)
                     item {
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(shape = RoundedCornerShape(12.dp))
-                                .shadow(elevation = 4.dp)
                         ) {
                             Row(
                                 Modifier
@@ -123,13 +154,14 @@ fun MainScreen(
                                 Text(text = "${selectedCity!!.name} , ${selectedCity!!.state}", modifier = Modifier.weight(1f))
                             }
                         }
-                        Divider(startIndent = 8.dp, thickness = 1.dp, color = Color.Transparent)
+                        Divider(startIndent = 8.dp, thickness = 8.dp, color = Color.Transparent)
                     }
+                if (weather != null)
                     item {
                         WeatherMain(main = weather!!.main)
                     }
-                }
             }
+        }
         Row(
             Modifier
                 .padding(horizontal = 16.dp)
@@ -152,6 +184,21 @@ fun MainScreen(
                         lastSelectedCity?.let {
                             item {
                                 Text(text = "Last selected: ${it.name}, ${it.state}",
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(35.dp)
+                                        .align(Alignment.CenterHorizontally)
+                                        .clickable {
+                                            viewModel.requestWeather(it)
+                                            focusManager.clearFocus()
+                                        }
+                                )
+
+                            }
+                        }
+                        locationCity?.let {
+                            item {
+                                Text(text = "Current position: ${it.name}, ${it.state}",
                                     Modifier
                                         .fillMaxWidth()
                                         .height(35.dp)
@@ -188,17 +235,17 @@ fun MainScreen(
 
 @Composable
 fun WeatherMain(main: Main) {
-    Column(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
             .clip(shape = RoundedCornerShape(12.dp))
-            .shadow(elevation = 4.dp)
+
     ) {
         Row(
             Modifier
-                .fillMaxWidth()
-                .padding(top = 6.dp, start = 8.dp, end = 8.dp)
                 .height(34.dp)
+                .padding(top = 6.dp, start = 8.dp, end = 8.dp)
+                .fillMaxWidth()
         ) {
             Text(text = "Temperature", modifier = Modifier.weight(1f))
             Text(text = "${main.temp}", modifier = Modifier.weight(1f))
@@ -237,8 +284,9 @@ fun WeatherMain(main: Main) {
 class MainScreenViewModel @Inject constructor(
     private val getGeo: GetGeo,
     private val getWeather: GetWeather,
-    private val getWeatherFor: GetWeatherFor,
-    private val preferences: SharedPreferences
+    private val getGeoReverse: GetGeoReverse,
+    private val preferences: SharedPreferences,
+    private val myLocationManager: LocationHelper
 ) : ViewModel() {
 
     private val _searchText = MutableStateFlow("")
@@ -262,6 +310,10 @@ class MainScreenViewModel @Inject constructor(
     private val _lastSelectedCity: MutableStateFlow<GeoResponseItem?> = MutableStateFlow(null)
     val lastSelectedCity = _lastSelectedCity.asStateFlow()
 
+    private val _locationCity: MutableStateFlow<GeoResponseItem?> = MutableStateFlow(null)
+    val locationCity = _locationCity.asStateFlow()
+
+    val location = myLocationManager.location
     fun restoreFromPref() {
         preferences.getString("city", null)?.let {
             Gson().fromJson(it, GeoResponseItem::class.java)?.let { item ->
@@ -270,6 +322,28 @@ class MainScreenViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun defineLocation() {
+        myLocationManager.runLocation()
+        myLocationManager.location.onEach {
+            it?.let {
+                getGeoReverse(it).onEach { resource ->
+                    when (resource) {
+                        is Resource.Success -> {
+                            _locationCity.emit(resource.data?.firstOrNull())
+                        }
+
+                        is Resource.Error -> {
+                            _locationCity.emit(null)
+                        }
+
+                        else -> {}
+                    }
+                }.launchIn(viewModelScope)
+            }
+        }.launchIn(viewModelScope)
+
     }
 
     fun requestWeather(city: GeoResponseItem) {

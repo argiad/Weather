@@ -9,7 +9,7 @@ object Versions {
     const val coreKtx= "1.9.0"
     const val lifecycleRuntimeKtx = "2.6.2"
     const val activityCompose = "1.7.2"
-
+    const val accompanist = "0.30.1"
     const val composeBOM = "2023.03.00"
 
     const val testJUnit = "4.13.2"
