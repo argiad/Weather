@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		385A3B622AC4F02A00968E90 /* LocationHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 385A3B612AC4F02A00968E90 /* LocationHelper.swift */; };
 		3866886D2AC481F40025EF6D /* WeatherApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3866886C2AC481F40025EF6D /* WeatherApp.swift */; };
 		3866886F2AC481F40025EF6D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3866886E2AC481F40025EF6D /* ContentView.swift */; };
 		386688712AC481F40025EF6D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 386688702AC481F40025EF6D /* Assets.xcassets */; };
@@ -27,6 +28,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		385A3B612AC4F02A00968E90 /* LocationHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationHelper.swift; sourceTree = "<group>"; };
 		386688692AC481F40025EF6D /* Weather.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Weather.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3866886C2AC481F40025EF6D /* WeatherApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherApp.swift; sourceTree = "<group>"; };
 		3866886E2AC481F40025EF6D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -78,6 +80,7 @@
 			isa = PBXGroup;
 			children = (
 				3866886C2AC481F40025EF6D /* WeatherApp.swift */,
+				385A3B612AC4F02A00968E90 /* LocationHelper.swift */,
 				3866886E2AC481F40025EF6D /* ContentView.swift */,
 				389BFAC32AC4934E00FFF1F8 /* Network */,
 				386688702AC481F40025EF6D /* Assets.xcassets */,
@@ -204,6 +207,7 @@
 				389BFACE2AC4936900FFF1F8 /* Coord.swift in Sources */,
 				3866886F2AC481F40025EF6D /* ContentView.swift in Sources */,
 				389BFADE2AC4B5DD00FFF1F8 /* NetworkSessionServiceable.swift in Sources */,
+				385A3B622AC4F02A00968E90 /* LocationHelper.swift in Sources */,
 				3866886D2AC481F40025EF6D /* WeatherApp.swift in Sources */,
 				389BFADA2AC4A92400FFF1F8 /* ErrorResponse.swift in Sources */,
 				389BFADC2AC4B5AF00FFF1F8 /* WeatherError.swift in Sources */,
@@ -265,6 +269,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "To find your weather";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -322,6 +327,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "To find your weather";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;

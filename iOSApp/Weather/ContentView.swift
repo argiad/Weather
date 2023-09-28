@@ -7,6 +7,7 @@
 
 import SwiftUI
 import UIKit
+import CoreLocationUI
 
 let networkHelper = NetworkHelper()
 
@@ -17,6 +18,8 @@ struct ContentView : View {
     
     @State private var _selectedCity: GeoCoding? = nil
     
+    @StateObject var locationHelper = LocationHelper()
+    
     var body: some View {
         NavigationStack {
             List {
@@ -26,6 +29,23 @@ struct ContentView : View {
                     } label: {
                         Text("\(city.name!) , \(city.state! )")
                     }
+                }
+                
+                if (locationHelper.authorizationStatus == .authorizedWhenInUse || locationHelper.authorizationStatus == .authorizedAlways) {
+                    if let city = locationHelper.reversedGeo {
+                        NavigationLink {
+                            
+                            DetailView(city:  city )
+                            
+                        } label: {
+                            Text("* \(city.name!) , \(city.state! )")
+                        }
+                    }
+                } else {
+                    LocationButton(.currentLocation) {
+                    }
+                    .symbolVariant(.circle)
+                    .labelStyle(.titleAndIcon)
                 }
             }
             .navigationTitle("Search")
@@ -64,7 +84,7 @@ struct ContentView : View {
     }
     
     private let defaults = UserDefaults.standard
-
+    
     
     private func restoreLast() {
         if let cityJson = defaults.string(forKey: "city"), let city = try? JSONDecoder().decode(GeoCoding.self, from: Data(cityJson.utf8)) {
@@ -109,7 +129,7 @@ struct DetailView: View {
                             } placeholder: {
                                 ProgressView()
                             }
-                                .frame(width: 24, height: 24)
+                            .frame(width: 24, height: 24)
                             Text ("Weather")
                         }
                     }.listRowSeparator(.hidden)

@@ -20,6 +20,7 @@ class URLProvider {
     enum Endpoint {
         case geo(_ str : String)
         case weather (_ geo : GeoCoding)
+        case geoReverse(lat: Double, lon: Double)
         
         var endpointPathString: String {
             switch self {
@@ -27,7 +28,8 @@ class URLProvider {
                 return  "\(URLProvider.baseURL)/geo/1.0/direct?q=\(text),US&limit=5&appid=\(URLProvider.apiKey)"
             case .weather(let geodata) :
                 return  "\(URLProvider.baseURL)/data/2.5/weather?lat=\(geodata.lat!)&lon=\(geodata.lon!)&appid=\(URLProvider.apiKey)"
-
+            case .geoReverse(let lat , let lon):
+                return  "\(URLProvider.baseURL)/geo/1.0/reverse?lat=\(lat)&lon=\(lon)&limit=1&appid=\(URLProvider.apiKey)"
             }
         }
     }
