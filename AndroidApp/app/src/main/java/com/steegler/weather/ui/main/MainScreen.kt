@@ -2,7 +2,11 @@
 
 package com.steegler.weather.ui.main
 
+import android.content.SharedPreferences
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,24 +16,40 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.Divider
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import com.google.gson.Gson
 import com.steegler.weather.Resource
 import com.steegler.weather.data.remote.GeoResponseItem
 import com.steegler.weather.data.remote.Main
@@ -47,6 +67,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun MainScreen(
     navController: NavController,
@@ -58,41 +79,108 @@ fun MainScreen(
     val selectedCity by viewModel.selectedCity.collectAsState()
     val weather by viewModel.weather.collectAsState()
     val isWeatherLoading by viewModel.isWeatherLoading.collectAsState()
+    val lastSelectedCity by viewModel.lastSelectedCity.collectAsState()
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            Modifier
-                .padding(horizontal = 16.dp)
-                .padding(top = 8.dp)
+    var isFocused = remember { mutableStateOf(true) }
+
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+    val interactionSource = remember { MutableInteractionSource() }
+    LaunchedEffect(Unit) {
+        viewModel.restoreFromPref()
+    }
+
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .clickable(
+            interactionSource = interactionSource,
+            indication = null    // this gets rid of the ripple effect
         ) {
-            Column {
-                TextField(value = searchText, modifier = Modifier.fillMaxWidth(), onValueChange = {
-                    viewModel.searchCity(it)
-                }, trailingIcon = { (if (isSearchingCity) Icons.Default.Refresh else if (selectedCity != null) Icons.Default.Check) })
-                LazyColumn {
-                    items(cityList) {
-                        Text(text = "${it.name}, ${it.state}",
-                            Modifier
-                                .fillMaxWidth()
-                                .height(35.dp)
-                                .align(Alignment.CenterHorizontally)
-                                .clickable {
-                                    viewModel.requestWeather(it)
-                                }
-                        )
+            keyboardController?.hide()
+            focusManager.clearFocus(true)
+        }) {// London
 
-                    }
-                }
-            }
-        }
         if (weather != null)
             Row {
-                LazyColumn(modifier = Modifier.padding(horizontal = 16.dp)) {
+                LazyColumn(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .padding(top = TextFieldDefaults.MinHeight + 24.dp)
+                ) {
+                    item {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(shape = RoundedCornerShape(12.dp))
+                                .shadow(elevation = 4.dp)
+                        ) {
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 6.dp, start = 8.dp, end = 8.dp)
+                                    .height(34.dp)
+                            ) {
+                                Text(text = "${selectedCity!!.name} , ${selectedCity!!.state}", modifier = Modifier.weight(1f))
+                            }
+                        }
+                        Divider(startIndent = 8.dp, thickness = 1.dp, color = Color.Transparent)
+                    }
                     item {
                         WeatherMain(main = weather!!.main)
                     }
                 }
             }
+        Row(
+            Modifier
+                .padding(horizontal = 16.dp)
+                .padding(top = 8.dp, bottom = 8.dp)
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            Column {
+                TextField(singleLine = true,
+                    value = searchText,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { isFocused.value = it.isFocused },
+                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Go),
+                    onValueChange = {
+                        viewModel.searchCity(it)
+                    }, trailingIcon = { (if (isSearchingCity) Icons.Default.Refresh else if (selectedCity != null) Icons.Default.Check) })
+                LazyColumn {
+                    if (isFocused.value) {
+                        lastSelectedCity?.let {
+                            item {
+                                Text(text = "Last selected: ${it.name}, ${it.state}",
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(35.dp)
+                                        .align(Alignment.CenterHorizontally)
+                                        .clickable {
+                                            viewModel.requestWeather(it)
+                                            focusManager.clearFocus()
+                                        }
+                                )
+
+                            }
+                        }
+                        items(cityList) {
+                            Text(text = "${it.name}, ${it.state}",
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(35.dp)
+                                    .align(Alignment.CenterHorizontally)
+                                    .clickable {
+                                        viewModel.requestWeather(it)
+                                        focusManager.clearFocus()
+                                    }
+                            )
+
+                        }
+                    }
+                }
+            }
+        }
     }
 
 }
@@ -149,7 +237,8 @@ fun WeatherMain(main: Main) {
 class MainScreenViewModel @Inject constructor(
     private val getGeo: GetGeo,
     private val getWeather: GetWeather,
-    private val getWeatherFor: GetWeatherFor
+    private val getWeatherFor: GetWeatherFor,
+    private val preferences: SharedPreferences
 ) : ViewModel() {
 
     private val _searchText = MutableStateFlow("")
@@ -169,12 +258,29 @@ class MainScreenViewModel @Inject constructor(
 
     private val _weather = MutableStateFlow<WeatherResponse?>(null)
     val weather = _weather.asStateFlow()
+
+    private val _lastSelectedCity: MutableStateFlow<GeoResponseItem?> = MutableStateFlow(null)
+    val lastSelectedCity = _lastSelectedCity.asStateFlow()
+
+    fun restoreFromPref() {
+        preferences.getString("city", null)?.let {
+            Gson().fromJson(it, GeoResponseItem::class.java)?.let { item ->
+                viewModelScope.launch(Dispatchers.Default) {
+                    _lastSelectedCity.emit(item)
+                }
+            }
+        }
+    }
+
     fun requestWeather(city: GeoResponseItem) {
 
         viewModelScope.launch(Dispatchers.Default) {
             _selectedCity.emit(city)
+            _lastSelectedCity.emit(city)
             _cities.emit(emptyList())
             _searchText.emit("${city.name},${city.state}")
+            val c = Gson().toJson(city)
+            preferences.edit().putString("city", c).apply()
         }
 
         getWeather(city.lat, city.lon).let {
@@ -206,7 +312,7 @@ class MainScreenViewModel @Inject constructor(
             _searchText.emit(fixedText)
         }
 
-        if (fixedText.isEmpty()){
+        if (fixedText.isEmpty()) {
             viewModelScope.launch {
                 _cities.emit(emptyList())
             }
